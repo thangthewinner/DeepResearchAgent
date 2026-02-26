@@ -1,0 +1,6 @@
+.venv/
+.vscode/
+__pycache__/
+.env 
+code.ipynb
+extracted_notebook.py
