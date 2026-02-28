@@ -1,6 +1,5 @@
 from typing import Literal
 
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
@@ -8,22 +7,21 @@ from langchain_core.messages import (
     filter_messages,
 )
 
-from config.settings import BASE_MODEL, COMPRESS_MODEL, OPENAI_API_KEY
+from ..models.llm import base_model, compress_model
 
 from ..models.state import ResearcherState
-from ..prompts.researcher import COMPRESS_RESEARCH_PROMPT, RESEARCH_AGENT_PROMPT
+from ..prompts.researcher import (
+    COMPRESS_HUMAN_MESSAGE_PROMPT,
+    COMPRESS_RESEARCH_PROMPT,
+    RESEARCH_AGENT_PROMPT,
+)
 from ..tools.common import think_tool
 from ..tools.search import tavily_search
 from ..utils.date import get_today_str
 
 # Initialize researcher tools
 researcher_tools = [tavily_search, think_tool]
-base_model = init_chat_model(model=BASE_MODEL, api_key=OPENAI_API_KEY)
 model_with_tools = base_model.bind_tools(researcher_tools)
-
-compress_model = init_chat_model(
-    model=COMPRESS_MODEL, max_tokens=32000, api_key=OPENAI_API_KEY
-)
 
 tools_by_name = {
     "tavily_search": tavily_search,
@@ -96,15 +94,12 @@ def compress_research(state: ResearcherState) -> dict:
     """
     system_message = COMPRESS_RESEARCH_PROMPT.format(date=get_today_str())
 
-    # We need compressing prompt tailored for this
-    compress_human_message = """Please compress the following research logic on the topic: <Topic>\n{research_topic}\n</Topic> into a fully comprehensive summary retaining all verbatim key facts and citations format."""
-
     messages = (
         [SystemMessage(content=system_message)]
         + list(state.get("researcher_messages", []))
         + [
             HumanMessage(
-                content=compress_human_message.format(
+                content=COMPRESS_HUMAN_MESSAGE_PROMPT.format(
                     research_topic=state.get("research_topic", "")
                 )
             )

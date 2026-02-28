@@ -1,7 +1,6 @@
 import asyncio
 from typing import Literal
 
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
@@ -11,7 +10,7 @@ from langchain_core.messages import (
 from langgraph.graph import END
 from langgraph.types import Command
 
-from config.settings import BASE_MODEL, OPENAI_API_KEY
+from ..models.llm import base_model
 
 from ..models.schemas import QualityMetric
 from ..models.state import SupervisorState
@@ -32,14 +31,11 @@ supervisor_tools = [
     refine_draft_report,
 ]
 
-base_model = init_chat_model(model=BASE_MODEL, api_key=OPENAI_API_KEY)
 supervisor_model_with_tools = base_model.bind_tools(supervisor_tools)
 
 max_concurrent_researchers = 3
 max_researcher_iterations = 5
 
-# Will be injected from graph.py builder to avoid circular dependency
-researcher_agent = None
 
 
 def get_notes_from_tool_calls(messages: list) -> list[str]:
@@ -105,129 +101,137 @@ async def supervisor_node(
     )
 
 
-async def supervisor_tools_node(
-    state: SupervisorState,
-) -> Command[Literal["red_team", "context_pruner", "__end__"]]:
-    """
-    Hands of Supervisor. Execute fan-out tool calls.
-    """
-    most_recent_message = state.get("supervisor_messages", [])[-1]
+def make_supervisor_tools_node(researcher_agent):
+    """Factory: creates supervisor_tools_node with researcher_agent injected via closure."""
 
-    exceeded_iterations = (
-        state.get("research_iterations", 0) >= max_researcher_iterations
-    )
-    no_tool_calls = not most_recent_message.tool_calls
-    research_complete = any(
-        tc["name"] == "ResearchComplete" for tc in most_recent_message.tool_calls
-    )
+    async def supervisor_tools_node(
+        state: SupervisorState,
+    ) -> Command[Literal["red_team", "context_pruner", "__end__"]]:
+        """
+        Hands of Supervisor. Execute fan-out tool calls.
+        """
+        most_recent_message = state.get("supervisor_messages", [])[-1]
+        tool_calls = getattr(most_recent_message, "tool_calls", None) or []
 
-    if exceeded_iterations or no_tool_calls or research_complete:
-        kb_notes = [
-            f"{f.content} (Confidence: {f.confidence_score})"
-            for f in state.get("knowledge_base", [])
-        ]
-        if not kb_notes:
-            kb_notes = get_notes_from_tool_calls(state.get("supervisor_messages", []))
-
-        return Command(
-            goto=END,
-            update={
-                "notes": kb_notes,
-                "research_brief": state.get("research_brief", ""),
-            },
+        exceeded_iterations = (
+            state.get("research_iterations", 0) >= max_researcher_iterations
+        )
+        no_tool_calls = not tool_calls
+        research_complete = any(
+            tc["name"] == "ResearchComplete" for tc in tool_calls
         )
 
-    conduct_research_calls = [
-        t for t in most_recent_message.tool_calls if t["name"] == "ConductResearch"
-    ]
-    refine_report_calls = [
-        t for t in most_recent_message.tool_calls if t["name"] == "refine_draft_report"
-    ]
-    think_calls = [
-        t for t in most_recent_message.tool_calls if t["name"] == "think_tool"
-    ]
+        if exceeded_iterations or no_tool_calls or research_complete:
+            kb = state.get("knowledge_base", [])
+            kb_notes = [
+                f"{f.content} (Confidence: {f.confidence_score})"
+                for f in kb
+            ]
+            if not kb_notes:
+                kb_notes = get_notes_from_tool_calls(state.get("supervisor_messages", []))
 
-    tool_messages = []
-    all_raw_notes = []
-    draft_report = state.get("draft_report", "")
-    updates = {}
-
-    for tool_call in think_calls:
-        observation = think_tool.invoke(tool_call["args"])
-        tool_messages.append(
-            ToolMessage(
-                content=observation, name="think_tool", tool_call_id=tool_call["id"]
+            return Command(
+                goto=END,
+                update={
+                    "notes": kb_notes,
+                    "knowledge_base": kb,
+                    "research_brief": state.get("research_brief", ""),
+                },
             )
-        )
 
-    if conduct_research_calls and researcher_agent is not None:
-        coros = [
-            researcher_agent.ainvoke(
-                {
-                    "researcher_messages": [
-                        HumanMessage(content=tc["args"]["research_topic"])
-                    ],
-                    "research_topic": tc["args"]["research_topic"],
-                }
-            )
-            for tc in conduct_research_calls
+        conduct_research_calls = [
+            t for t in tool_calls if t["name"] == "ConductResearch"
         ]
-        results = await asyncio.gather(*coros)
-        for result, tool_call in zip(results, conduct_research_calls):
+        refine_report_calls = [
+            t for t in tool_calls if t["name"] == "refine_draft_report"
+        ]
+        think_calls = [
+            t for t in tool_calls if t["name"] == "think_tool"
+        ]
+
+        tool_messages = []
+        all_raw_notes = []
+        draft_report = state.get("draft_report", "")
+        updates = {}
+
+        for tool_call in think_calls:
+            observation = think_tool.invoke(tool_call["args"])
             tool_messages.append(
                 ToolMessage(
-                    content=result.get("compressed_research", ""),
+                    content=observation, name="think_tool", tool_call_id=tool_call["id"]
+                )
+            )
+
+        if conduct_research_calls:
+            coros = [
+                researcher_agent.ainvoke(
+                    {
+                        "researcher_messages": [
+                            HumanMessage(content=tc["args"]["research_topic"])
+                        ],
+                        "research_topic": tc["args"]["research_topic"],
+                    }
+                )
+                for tc in conduct_research_calls
+            ]
+            results = await asyncio.gather(*coros)
+            for result, tool_call in zip(results, conduct_research_calls):
+                tool_messages.append(
+                    ToolMessage(
+                        content=result.get("compressed_research", ""),
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+                all_raw_notes.extend(result.get("raw_notes", []))
+
+        for tool_call in refine_report_calls:
+            kb = state.get("knowledge_base", [])
+            kb_str = (
+                "CONFIRMED FACTS:\n" + "\n".join([f"- {f.content}" for f in kb])
+                if kb
+                else "\n".join(
+                    get_notes_from_tool_calls(state.get("supervisor_messages", []))
+                )
+            )
+            new_draft = refine_draft_report.invoke(
+                {
+                    "research_brief": state.get("research_brief", ""),
+                    "findings": kb_str,
+                    "draft_report": state.get("draft_report", ""),
+                }
+            )
+
+            eval_result = evaluate_draft_quality(
+                research_brief=state.get("research_brief", ""), draft_report=new_draft
+            )
+            avg_score = (
+                eval_result.comprehensiveness_score + eval_result.accuracy_score
+            ) / 2
+
+            tool_messages.append(
+                ToolMessage(
+                    content=f"Draft Updated.\nQuality Score: {avg_score}/10.\nJudge Feedback: {eval_result.specific_critique}",
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )
             )
-            all_raw_notes.extend(result.get("raw_notes", []))
+            draft_report = new_draft
 
-    for tool_call in refine_report_calls:
-        kb = state.get("knowledge_base", [])
-        kb_str = (
-            "CONFIRMED FACTS:\n" + "\n".join([f"- {f.content}" for f in kb])
-            if kb
-            else "\n".join(
-                get_notes_from_tool_calls(state.get("supervisor_messages", []))
-            )
-        )
-        new_draft = refine_draft_report.invoke(
-            {
-                "research_brief": state.get("research_brief", ""),
-                "findings": kb_str,
-                "draft_report": state.get("draft_report", ""),
-            }
-        )
+            updates["quality_history"] = [
+                QualityMetric(
+                    score=avg_score,
+                    feedback=eval_result.specific_critique,
+                    iteration=state.get("research_iterations", 0),
+                )
+            ]
+            if avg_score < 7.0:
+                updates["needs_quality_repair"] = True
 
-        eval_result = evaluate_draft_quality(
-            research_brief=state.get("research_brief", ""), draft_report=new_draft
-        )
-        avg_score = (
-            eval_result.comprehensiveness_score + eval_result.accuracy_score
-        ) / 2
+        updates["supervisor_messages"] = tool_messages
+        updates["raw_notes"] = all_raw_notes
+        updates["draft_report"] = draft_report
 
-        tool_messages.append(
-            ToolMessage(
-                content=f"Draft Updated.\nQuality Score: {avg_score}/10.\nJudge Feedback: {eval_result.specific_critique}",
-                name=tool_call["name"],
-                tool_call_id=tool_call["id"],
-            )
-        )
-        draft_report = new_draft
+        return Command(goto=["red_team", "context_pruner"], update=updates)
 
-        updates["quality_history"] = [
-            QualityMetric(
-                score=avg_score,
-                feedback=eval_result.specific_critique,
-                iteration=state.get("research_iterations", 0),
-            )
-        ]
-        if avg_score < 7.0:
-            updates["needs_quality_repair"] = True
-
-    updates["supervisor_messages"] = tool_messages
-    updates["raw_notes"] = all_raw_notes
-    updates["draft_report"] = draft_report
-
-    return Command(goto=["red_team", "context_pruner"], update=updates)
+    return supervisor_tools_node

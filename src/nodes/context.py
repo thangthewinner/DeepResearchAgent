@@ -1,14 +1,9 @@
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from config.settings import COMPRESSOR_MODEL, OPENAI_API_KEY
-
+from ..models.llm import compressor_model
 from ..models.schemas import FactExtraction
 from ..models.state import SupervisorState
 from ..prompts.context import CONTEXT_PRUNING_PROMPT
-
-# We use a fast, cheaper model for routine extraction
-compressor_model = init_chat_model(model=COMPRESSOR_MODEL, api_key=OPENAI_API_KEY)
 
 
 async def context_pruning_node(state: SupervisorState) -> dict:

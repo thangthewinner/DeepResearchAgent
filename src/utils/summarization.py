@@ -1,11 +1,8 @@
-from config.settings import OPENAI_API_KEY, SUMMARIZATION_MODEL
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 
+from ..models.llm import summarization_model
 from ..models.schemas import Summary
 from .date import get_today_str
-
-summarization_model = init_chat_model(model=SUMMARIZATION_MODEL, api_key=OPENAI_API_KEY)
 
 SUMMARIZE_WEBPAGE_PROMPT = """You are tasked with summarizing webpage content. Your goal is to preserve the most important information.
 

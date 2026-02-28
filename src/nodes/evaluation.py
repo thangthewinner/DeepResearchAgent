@@ -1,15 +1,9 @@
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from config.settings import CRITIC_MODEL, JUDGE_MODEL, OPENAI_API_KEY
-
+from ..models.llm import critic_model, judge_model
 from ..models.schemas import Critique, EvaluationResult
 from ..models.state import SupervisorState
 from ..prompts.evaluation import EVALUATE_DRAFT_PROMPT, RED_TEAM_PROMPT
-
-# We define a specialized, powerful model for our critic and judge.
-critic_model = init_chat_model(model=CRITIC_MODEL, api_key=OPENAI_API_KEY)
-judge_model = init_chat_model(model=JUDGE_MODEL, api_key=OPENAI_API_KEY)
 
 
 async def red_team_node(state: SupervisorState) -> dict:

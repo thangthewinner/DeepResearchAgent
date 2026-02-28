@@ -1,5 +1,4 @@
-from config.settings import *
-from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from .agents import researcher, supervisor, writer
@@ -11,24 +10,7 @@ from .models.state import (
     SupervisorState,
 )
 from .nodes import clarification, context, evaluation, research
-from .tools.common import ConductResearch, ResearchComplete, think_tool
-from .tools.search import tavily_search
 
-# Initialize models
-base_model = init_chat_model(model=BASE_MODEL, api_key=OPENAI_API_KEY)
-
-# Initialize supervisor tools
-supervisor_tools = [
-    ConductResearch,
-    ResearchComplete,
-    think_tool,
-    writer.refine_draft_report,
-]
-supervisor_model_with_tools = base_model.bind_tools(supervisor_tools)
-
-# Initialize researcher tools
-researcher_tools = [tavily_search, think_tool]
-model_with_tools = base_model.bind_tools(researcher_tools)
 
 
 def build_researcher_agent():
@@ -55,11 +37,11 @@ def build_supervisor_agent(researcher_agent):
     """Build supervisor sub-graph."""
     supervisor_builder = StateGraph(SupervisorState)
 
-    # Inject researcher_agent into supervisor module
-    supervisor.researcher_agent = researcher_agent
-
     supervisor_builder.add_node("supervisor", supervisor.supervisor_node)
-    supervisor_builder.add_node("supervisor_tools", supervisor.supervisor_tools_node)
+    supervisor_builder.add_node(
+        "supervisor_tools",
+        supervisor.make_supervisor_tools_node(researcher_agent),
+    )
     supervisor_builder.add_node("red_team", evaluation.red_team_node)
     supervisor_builder.add_node("context_pruner", context.context_pruning_node)
 
@@ -72,7 +54,7 @@ def build_supervisor_agent(researcher_agent):
 
 
 def build_main_agent():
-    """Build main agent graph."""
+    """Build main agent graph with checkpointer for interrupt support."""
     researcher_agent = build_researcher_agent()
     supervisor_agent = build_supervisor_agent(researcher_agent)
 
@@ -90,4 +72,4 @@ def build_main_agent():
     builder.add_edge("supervisor_subgraph", "final_report_generation")
     builder.add_edge("final_report_generation", END)
 
-    return builder.compile()
+    return builder.compile(checkpointer=MemorySaver())

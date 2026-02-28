@@ -79,3 +79,9 @@ All relevant information should be repeated verbatim, but in a cleaner format.
 
 Critical: Preserve information verbatim - don't rewrite, summarize, or paraphrase.
 """
+
+
+COMPRESS_HUMAN_MESSAGE_PROMPT = """Please compress the following research logic on the topic: <Topic>
+{research_topic}
+</Topic> into a fully comprehensive summary retaining all verbatim key facts and citations format."""
+

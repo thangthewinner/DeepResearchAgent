@@ -1,11 +1,9 @@
 from typing import Literal
 
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage, HumanMessage, get_buffer_string
-from langgraph.graph import END
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 
-from config.settings import BASE_MODEL, OPENAI_API_KEY
+from ..models.llm import base_model as model
 
 from ..models.schemas import ClarifyWithUser, ResearchQuestion
 from ..models.state import AgentState
@@ -15,14 +13,13 @@ from ..prompts.clarification import (
 )
 from ..utils.date import get_today_str
 
-model = init_chat_model(model=BASE_MODEL, api_key=OPENAI_API_KEY)
-
 
 def clarify_with_user(
     state: AgentState,
-) -> Command[Literal["write_research_brief", "__end__"]]:
+) -> Command[Literal["clarify_with_user", "write_research_brief"]]:
     """
     Gatekeeper node. Determines if the user's request has enough detail to proceed.
+    Uses interrupt() to pause graph and wait for user input when clarification is needed.
     """
     messages_text = get_buffer_string(state.get("messages", []))
     current_date = get_today_str()
@@ -40,8 +37,18 @@ def clarify_with_user(
     )
 
     if response.need_clarification:
+        # Pause graph, send question to caller (e.g. Telegram bot)
+        # When user replies, interrupt() returns the user's answer
+        user_answer = interrupt(response.question)
+
         return Command(
-            goto=END, update={"messages": [AIMessage(content=response.question)]}
+            goto="clarify_with_user",
+            update={
+                "messages": [
+                    AIMessage(content=response.question),
+                    HumanMessage(content=user_answer),
+                ]
+            },
         )
     else:
         return Command(

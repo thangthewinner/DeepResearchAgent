@@ -53,5 +53,6 @@ class AgentState(MessagesState):
     supervisor_messages: Annotated[Sequence[BaseMessage], add_messages]
     raw_notes: Annotated[list[str], operator.add] = []
     notes: Annotated[list[str], operator.add] = []
+    knowledge_base: Annotated[List[Fact], operator.add] = []
     draft_report: str
     final_report: str

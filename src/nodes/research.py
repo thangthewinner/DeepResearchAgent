@@ -29,7 +29,8 @@ def write_draft_report(state: AgentState) -> dict:
         "research_brief": research_brief,
         "draft_report": response.draft_report,
         "supervisor_messages": [
-            "Here is the draft report: " + response.draft_report,
-            research_brief,
+            HumanMessage(content="Here is the draft report: " + response.draft_report),
+            HumanMessage(content=research_brief),
         ],
     }
+

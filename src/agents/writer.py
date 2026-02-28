@@ -1,10 +1,9 @@
 from typing import Annotated
 
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import InjectedToolArg, tool
 
-from config.settings import OPENAI_API_KEY, WRITER_MODEL
+from ..models.llm import writer_model
 
 from ..models.state import AgentState
 from ..prompts.writer import (
@@ -12,8 +11,6 @@ from ..prompts.writer import (
     REPORT_GENERATION_WITH_DRAFT_INSIGHT_PROMPT,
 )
 from ..utils.date import get_today_str
-
-writer_model = init_chat_model(model=WRITER_MODEL, api_key=OPENAI_API_KEY)
 
 
 @tool(parse_docstring=True)
@@ -52,8 +49,20 @@ def final_report_generation(state: AgentState) -> dict:
     Final node of the main graph. Synthesizes all gathered information into final report.
     """
     research_brief = state.get("research_brief", "")
-    findings = "\n".join(state.get("notes", []))
     draft_report = state.get("draft_report", "")
+
+    # Combine structured knowledge_base facts with raw notes
+    kb_facts = state.get("knowledge_base", [])
+    kb_section = "\n".join(
+        [f"- [{f.confidence_score}%] {f.content} (source: {f.source_url})" for f in kb_facts]
+    )
+    raw_notes = "\n".join(state.get("notes", []))
+
+    findings = ""
+    if kb_section:
+        findings += "VERIFIED FACTS:\n" + kb_section + "\n\n"
+    if raw_notes:
+        findings += "ADDITIONAL NOTES:\n" + raw_notes
 
     prompt = FINAL_REPORT_GENERATION_WITH_HELPFULNESS_INSIGHTFULNESS_HIT_CITATION_PROMPT.format(
         research_brief=research_brief,
