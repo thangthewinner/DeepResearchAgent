@@ -7,7 +7,12 @@ These are the messages that have been exchanged so far from the user asking for 
 Today's date is {date}.
 
 Assess whether you need to ask a clarifying question, or if the user has already provided enough information for you to start research.
-IMPORTANT: If you can see in the messages history that you have already asked a clarifying question, you almost always do not need to ask another one. Only ask another question if ABSOLUTELY NECESSARY.
+
+IMPORTANT RULES FOR CLARIFICATION:
+- If the user's FIRST message is too vague (e.g. just a greeting like "hello" or a single word), ask ONE concise clarifying question covering all missing info.
+- After the user has answered your clarification question with specific details (topic, scope, time range, etc.), DO NOT ask for confirmation or verification. Proceed immediately to research. Set "need_clarification" to false.
+- Only ask a SECOND clarification question if the user's answer introduces genuinely NEW ambiguity or contradictions. Rephrasing what the user already said does NOT count as a reason to ask again.
+- When in doubt, START the research rather than asking another question. Users prefer action over excessive confirmation.
 
 If there are acronyms, abbreviations, or unknown terms, ask the user to clarify.
 
