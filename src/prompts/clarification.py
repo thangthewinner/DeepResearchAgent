@@ -10,6 +10,10 @@ Assess whether you need to ask a clarifying question, or if the user has already
 IMPORTANT: If you can see in the messages history that you have already asked a clarifying question, you almost always do not need to ask another one. Only ask another question if ABSOLUTELY NECESSARY.
 
 If there are acronyms, abbreviations, or unknown terms, ask the user to clarify.
+
+CRITICAL: Make sure your response (both the question and verification) is written in the SAME language as the human messages!
+For example, if the user's messages are in Vietnamese, respond in Vietnamese. If in English, respond in English.
+
 If you need to ask a question, follow these guidelines:
 - Be concise while gathering all necessary information
 - Make sure to gather all the information needed to carry out the research task in a concise, well-structured manner.
