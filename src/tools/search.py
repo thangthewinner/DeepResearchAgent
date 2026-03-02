@@ -4,7 +4,10 @@ from config.settings import MAX_CONTEXT_LENGTH, TAVILY_API_KEY
 from langchain_core.tools import InjectedToolArg, tool
 from tavily import TavilyClient
 
+from ..logging_config import get_logger
 from ..utils.summarization import summarize_webpage_content
+
+logger = get_logger(__name__)
 
 tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 
@@ -16,7 +19,7 @@ def tavily_search_multiple(
     include_raw_content: bool = True,
 ) -> List[dict]:
     """Perform search using Tavily API."""
-    print(f"🔍 Executing Tavily search for: {search_queries}")
+    logger.info("Executing Tavily search", extra={"queries": search_queries})
     search_docs = []
     for query in search_queries:
         result = tavily_client.search(

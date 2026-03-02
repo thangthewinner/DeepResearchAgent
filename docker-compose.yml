@@ -1,0 +1,11 @@
+services:
+  telegram-bot:
+    build: .
+    env_file: .env
+    volumes:
+      # Persist SQLite checkpoint DB across container restarts
+      - checkpoints:/app/data
+    restart: unless-stopped
+
+volumes:
+  checkpoints:

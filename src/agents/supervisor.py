@@ -10,6 +10,7 @@ from langchain_core.messages import (
 from langgraph.graph import END
 from langgraph.types import Command
 
+from config.settings import MAX_CONCURRENT_RESEARCHERS, MAX_RESEARCHER_ITERATIONS
 from ..models.llm import base_model
 
 from ..models.schemas import QualityMetric
@@ -33,8 +34,8 @@ supervisor_tools = [
 
 supervisor_model_with_tools = base_model.bind_tools(supervisor_tools)
 
-max_concurrent_researchers = 3
-max_researcher_iterations = 5
+max_concurrent_researchers = MAX_CONCURRENT_RESEARCHERS
+max_researcher_iterations = MAX_RESEARCHER_ITERATIONS
 
 
 
@@ -174,8 +175,18 @@ def make_supervisor_tools_node(researcher_agent):
                 )
                 for tc in conduct_research_calls
             ]
-            results = await asyncio.gather(*coros)
+            results = await asyncio.gather(*coros, return_exceptions=True)
             for result, tool_call in zip(results, conduct_research_calls):
+                if isinstance(result, Exception):
+                    # One researcher failing should not crash the whole request
+                    tool_messages.append(
+                        ToolMessage(
+                            content=f"[ERROR] Researcher sub-agent failed: {result}",
+                            name=tool_call["name"],
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                    continue
                 tool_messages.append(
                     ToolMessage(
                         content=result.get("compressed_research", ""),
@@ -202,7 +213,7 @@ def make_supervisor_tools_node(researcher_agent):
                 }
             )
 
-            eval_result = evaluate_draft_quality(
+            eval_result = await evaluate_draft_quality(
                 research_brief=state.get("research_brief", ""), draft_report=new_draft
             )
             avg_score = (

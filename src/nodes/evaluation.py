@@ -35,7 +35,7 @@ async def red_team_node(state: SupervisorState) -> dict:
     }
 
 
-def evaluate_draft_quality(research_brief: str, draft_report: str) -> EvaluationResult:
+async def evaluate_draft_quality(research_brief: str, draft_report: str) -> EvaluationResult:
     """
     'Self-Evolution' scoring mechanism. LLM-as-a-judge quality evaluate.
     """
@@ -46,4 +46,4 @@ def evaluate_draft_quality(research_brief: str, draft_report: str) -> Evaluation
 
     structured_judge = judge_model.with_structured_output(EvaluationResult)
 
-    return structured_judge.invoke([HumanMessage(content=eval_prompt)])
+    return await structured_judge.ainvoke([HumanMessage(content=eval_prompt)])

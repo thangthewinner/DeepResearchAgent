@@ -1,8 +1,11 @@
 from langchain_core.messages import HumanMessage
 
+from ..logging_config import get_logger
 from ..models.llm import summarization_model
 from ..models.schemas import Summary
 from .date import get_today_str
+
+logger = get_logger(__name__)
 
 SUMMARIZE_WEBPAGE_PROMPT = """You are tasked with summarizing webpage content. Your goal is to preserve the most important information.
 
@@ -42,7 +45,11 @@ def summarize_webpage_content(webpage_content: str) -> str:
         )
         return formatted_summary
     except Exception as e:
-        print(f"❌ Summarization failed: {str(e)}")
+        logger.warning(
+            "Webpage summarization failed, falling back to truncation",
+            exc_info=True,
+            extra={"content_length": len(webpage_content)},
+        )
         return (
             webpage_content[:1000] + "..."
             if len(webpage_content) > 1000

@@ -2,12 +2,11 @@ from config.settings import CREATIVE_MODEL, OPENAI_API_KEY
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 
+from ..models.llm import creative_model
 from ..models.schemas import DraftReport
 from ..models.state import AgentState
 from ..prompts.writer import DRAFT_REPORT_GENERATION_PROMPT
 from ..utils.date import get_today_str
-
-creative_model = init_chat_model(model=CREATIVE_MODEL, api_key=OPENAI_API_KEY)
 
 
 def write_draft_report(state: AgentState) -> dict:
@@ -33,4 +32,3 @@ def write_draft_report(state: AgentState) -> dict:
             HumanMessage(content=research_brief),
         ],
     }
-

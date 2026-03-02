@@ -12,7 +12,6 @@ from .models.state import (
 from .nodes import clarification, context, evaluation, research
 
 
-
 def build_researcher_agent():
     """Build researcher sub-graph."""
     agent_builder = StateGraph(ResearcherState, output_schema=ResearcherOutputState)
@@ -53,8 +52,18 @@ def build_supervisor_agent(researcher_agent):
     return supervisor_builder.compile()
 
 
-def build_main_agent():
-    """Build main agent graph with checkpointer for interrupt support."""
+def build_main_agent(checkpointer=None):
+    """
+    Build main agent graph.
+
+    Args:
+        checkpointer: LangGraph checkpointer backend. Pass an AsyncSqliteSaver
+            (or PostgresSaver) for production persistence. Defaults to the
+            in-memory MemorySaver which loses state on restart.
+    """
+    if checkpointer is None:
+        checkpointer = MemorySaver()
+
     researcher_agent = build_researcher_agent()
     supervisor_agent = build_supervisor_agent(researcher_agent)
 
@@ -72,4 +81,4 @@ def build_main_agent():
     builder.add_edge("supervisor_subgraph", "final_report_generation")
     builder.add_edge("final_report_generation", END)
 
-    return builder.compile(checkpointer=MemorySaver())
+    return builder.compile(checkpointer=checkpointer)
