@@ -23,9 +23,13 @@ from telegram.ext import (
 from config.settings import REQUEST_TIMEOUT_SECONDS, SQLITE_DB_PATH
 from src.graph import build_main_agent
 from src.logging_config import get_logger, setup_logging
+from src.server import run_server
 
 setup_logging()
 logger = get_logger(__name__)
+
+# Keep a strong reference to the background task to prevent garbage collection
+background_tasks = set()
 
 
 async def post_init(application: Application) -> None:
@@ -35,6 +39,11 @@ async def post_init(application: Application) -> None:
     application.bot_data["checkpointer"] = checkpointer
     application.bot_data["agent"] = build_main_agent(checkpointer)
     logger.info("Agent initialized with SQLite checkpointer", extra={"db": SQLITE_DB_PATH})
+
+    # Start the FastAPI health check server in the background
+    task = asyncio.create_task(run_server())
+    background_tasks.add(task)
+    task.add_done_callback(background_tasks.discard)
 
 
 async def post_shutdown(application: Application) -> None:

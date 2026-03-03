@@ -4,12 +4,43 @@ from config.settings import MAX_CONTEXT_LENGTH, TAVILY_API_KEY
 from langchain_core.tools import InjectedToolArg, tool
 from tavily import TavilyClient
 
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
 from ..logging_config import get_logger
 from ..utils.summarization import summarize_webpage_content
 
 logger = get_logger(__name__)
 
 tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
+
+
+def _log_retry(retry_state):
+    """Log a warning before a retry attempt."""
+    logger.warning(
+        f"Retrying Tavily search after exception: {retry_state.outcome.exception()} "
+        f"(Attempt {retry_state.attempt_number})"
+    )
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type(Exception),
+    before_sleep=_log_retry,
+)
+def _tavily_search_with_retry(query: str, max_results: int, topic: str, include_raw_content: bool) -> dict:
+    """Wrapped API call to enable retries on a per-query basis."""
+    return tavily_client.search(
+        query,
+        max_results=max_results,
+        include_raw_content=include_raw_content,
+        topic=topic,
+    )
 
 
 def tavily_search_multiple(
@@ -22,13 +53,16 @@ def tavily_search_multiple(
     logger.info("Executing Tavily search", extra={"queries": search_queries})
     search_docs = []
     for query in search_queries:
-        result = tavily_client.search(
-            query,
-            max_results=max_results,
-            include_raw_content=include_raw_content,
-            topic=topic,
-        )
-        search_docs.append(result)
+        try:
+            result = _tavily_search_with_retry(
+                query,
+                max_results=max_results,
+                include_raw_content=include_raw_content,
+                topic=topic,
+            )
+            search_docs.append(result)
+        except Exception as e:
+            logger.error(f"Failed to fetch results for query '{query}' after retries", exc_info=e)
     return search_docs
 
 

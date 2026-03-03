@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
     "dotenv>=0.9.9",
+    "fastapi>=0.135.1",
     "langchain>=1.2.10",
     "langchain-openai>=1.1.10",
     "langgraph>=1.0.9",
@@ -15,6 +16,8 @@ dependencies = [
     "python-telegram-bot>=22.6",
     "rich>=14.3.3",
     "tavily>=1.1.0",
+    "tenacity>=9.1.4",
+    "uvicorn>=0.41.0",
 ]
 
 [dependency-groups]
