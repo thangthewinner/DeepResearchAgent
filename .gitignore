@@ -4,3 +4,5 @@ __pycache__/
 .env 
 code.ipynb
 extracted_notebook.py
+checkpoints*
+logs/
