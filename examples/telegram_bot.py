@@ -3,16 +3,7 @@ import os
 import sys
 import warnings
 
-# LangChain's with_structured_output() stores parsed results in AIMessage.parsed
-# which Pydantic declares as None, causing harmless serialization warnings.
-warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from dotenv import load_dotenv
-
-load_dotenv()
-
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 from telegram import Update
@@ -28,6 +19,14 @@ from config.settings import REQUEST_TIMEOUT_SECONDS
 from src.graph import build_main_agent
 from src.logging_config import get_logger, setup_logging
 from src.server import run_server
+
+# LangChain's with_structured_output() stores parsed results in AIMessage.parsed
+# which Pydantic declares as None, causing harmless serialization warnings.
+warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+load_dotenv()
 
 setup_logging()
 logger = get_logger(__name__)

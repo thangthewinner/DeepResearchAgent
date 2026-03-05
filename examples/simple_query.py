@@ -3,15 +3,7 @@ import os
 import sys
 import warnings
 
-warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
-
-# Add project root to sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from dotenv import load_dotenv
-
-load_dotenv()
-
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 from rich.console import Console
@@ -20,6 +12,13 @@ from rich.markdown import Markdown
 from config.settings import REQUEST_TIMEOUT_SECONDS
 from src.graph import build_main_agent
 from src.logging_config import get_logger, setup_logging
+
+warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
+
+# Add project root to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+load_dotenv()
 
 setup_logging()
 logger = get_logger(__name__)
