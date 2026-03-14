@@ -55,11 +55,10 @@ def build_supervisor_agent(researcher_agent):
     """Build supervisor sub-graph."""
     supervisor_builder = StateGraph(SupervisorState)
 
-    # Inject researcher_agent into supervisor module
-    supervisor.researcher_agent = researcher_agent
-
     supervisor_builder.add_node("supervisor", supervisor.supervisor_node)
-    supervisor_builder.add_node("supervisor_tools", supervisor.supervisor_tools_node)
+    supervisor_builder.add_node(
+        "supervisor_tools", supervisor.make_supervisor_tools_node(researcher_agent)
+    )
     supervisor_builder.add_node("red_team", evaluation.red_team_node)
     supervisor_builder.add_node("context_pruner", context.context_pruning_node)
 
@@ -69,6 +68,7 @@ def build_supervisor_agent(researcher_agent):
     supervisor_builder.add_edge("context_pruner", "supervisor")
 
     return supervisor_builder.compile()
+
 
 
 def build_main_agent():
