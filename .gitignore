@@ -6,3 +6,5 @@ code.ipynb
 extracted_notebook.py
 checkpoints*
 logs/
+.claude/
+explain.md

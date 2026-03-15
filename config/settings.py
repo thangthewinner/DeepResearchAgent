@@ -12,7 +12,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # --- API Keys (required, validated at startup) ---
     openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
@@ -22,9 +24,7 @@ class Settings(BaseSettings):
     max_concurrent_researchers: int = Field(
         default=1, alias="MAX_CONCURRENT_RESEARCHERS"
     )
-    max_researcher_iterations: int = Field(
-        default=5, alias="MAX_RESEARCHER_ITERATIONS"
-    )
+    max_researcher_iterations: int = Field(default=5, alias="MAX_RESEARCHER_ITERATIONS")
     max_context_length: int = Field(default=250000, alias="MAX_CONTEXT_LENGTH")
 
     # --- Model Names ---
@@ -53,9 +53,6 @@ class Settings(BaseSettings):
         default=120, alias="RESEARCHER_TIMEOUT_SECONDS"
     )
 
-    # --- Persistence ---
-    sqlite_db_path: str = Field(default="./checkpoints.db", alias="SQLITE_DB_PATH")
-
     # --- LangSmith Observability (optional) ---
     # Set these env vars to enable automatic tracing on smith.langchain.com
     # LANGCHAIN_TRACING_V2=true
@@ -65,9 +62,7 @@ class Settings(BaseSettings):
         default=None, alias="LANGCHAIN_TRACING_V2"
     )
     langchain_api_key: Optional[str] = Field(default=None, alias="LANGCHAIN_API_KEY")
-    langchain_project: str = Field(
-        default="deepresearch", alias="LANGCHAIN_PROJECT"
-    )
+    langchain_project: str = Field(default="deepresearch", alias="LANGCHAIN_PROJECT")
 
     # --- Logging ---
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
@@ -75,7 +70,7 @@ class Settings(BaseSettings):
 
 # Singleton — loaded once at import time.
 # Raises ValidationError immediately if required keys are missing.
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
 
 # Re-export flat constants for backward compatibility with existing imports.
 OPENAI_API_KEY = settings.openai_api_key
@@ -99,4 +94,3 @@ WRITER_MAX_TOKENS = settings.writer_max_tokens
 
 REQUEST_TIMEOUT_SECONDS = settings.request_timeout_seconds
 RESEARCHER_TIMEOUT_SECONDS = settings.researcher_timeout_seconds
-SQLITE_DB_PATH = settings.sqlite_db_path

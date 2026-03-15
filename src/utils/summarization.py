@@ -44,7 +44,7 @@ def summarize_webpage_content(webpage_content: str) -> str:
             f"<key_excerpts>\n{summary_result.key_excerpts}\n</key_excerpts>"
         )
         return formatted_summary
-    except Exception as e:
+    except Exception:
         logger.warning(
             "Webpage summarization failed, falling back to truncation",
             exc_info=True,

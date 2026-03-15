@@ -30,7 +30,7 @@ async def red_team_node(state: SupervisorState) -> dict:
     return {
         "active_critiques": [critique],
         "supervisor_messages": [
-            SystemMessage(content=f"⚠️ ADVERSARIAL FEEDBACK DETECTED: {content}")
+            SystemMessage(content=f"ADVERSARIAL FEEDBACK DETECTED: {content}")
         ],
     }
 

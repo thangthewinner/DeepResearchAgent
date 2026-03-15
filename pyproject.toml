@@ -5,13 +5,12 @@ description = "A multi-agent deep research assistant powered by LangGraph and GP
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aiosqlite>=0.22.1",
     "dotenv>=0.9.9",
     "fastapi>=0.135.1",
+    "gradio>=5.50.2",
     "langchain>=1.2.10",
     "langchain-openai>=1.1.10",
     "langgraph>=1.0.9",
-    "langgraph-checkpoint-sqlite>=3.0.3",
     "pydantic-settings>=2.13.1",
     "python-telegram-bot>=22.6",
     "rich>=14.3.3",

@@ -1,12 +1,17 @@
+from typing import Any
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from ..logging_config import get_logger
 from ..models.llm import compressor_model
 from ..models.schemas import FactExtraction
-from ..models.state import SupervisorState
+from ..models.state import RAW_NOTES_CLEAR, SupervisorState
 from ..prompts.context import CONTEXT_PRUNING_PROMPT
 
+logger = get_logger(__name__)
 
-async def context_pruning_node(state: SupervisorState) -> dict:
+
+async def context_pruning_node(state: SupervisorState) -> dict[str, Any]:
     """
     'Context Engineering'. Takes raw notes buffer, extracts facts, clears buffer.
     """
@@ -23,13 +28,19 @@ async def context_pruning_node(state: SupervisorState) -> dict:
         result = await structured_llm.ainvoke([HumanMessage(content=prompt)])
         new_facts = result.new_facts
 
-        message = f"[SYSTEM] Context Pruned. {len(new_facts)} new facts added to Knowledge Base. Raw notes buffer cleared."
-    except Exception as e:
+        message = (
+            "[SYSTEM] Context Pruned. "
+            f"{len(new_facts)} new facts added to Knowledge Base. Raw notes buffer cleared."
+        )
+    except Exception:
+        logger.exception(
+            "Context pruning failed", extra={"raw_notes_count": len(raw_notes)}
+        )
         new_facts = []
-        message = f"[SYSTEM] Context Pruning failed: {str(e)}"
+        message = "[SYSTEM] Context Pruning failed."
 
     return {
-        "raw_notes": [],
+        "raw_notes": [RAW_NOTES_CLEAR],
         "knowledge_base": new_facts,
         "supervisor_messages": [SystemMessage(content=message)],
     }
