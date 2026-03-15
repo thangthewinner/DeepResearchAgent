@@ -1,5 +1,3 @@
-from config.settings import CREATIVE_MODEL, OPENAI_API_KEY
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 
 from ..models.llm import creative_model

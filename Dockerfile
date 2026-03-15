@@ -20,20 +20,16 @@ WORKDIR /app
 # Copy uv binary from builder
 COPY --from=builder /bin/uv /bin/uvx /bin/
 
-# Copy installed site-packages from builder
-COPY --from=builder /app/.venv /app/.venv
-
-# Copy source
+# Copy source first
 COPY . .
+
+# Copy installed site-packages from builder (must happen after source copy so host .venv can't overwrite)
+COPY --from=builder /app/.venv /app/.venv
 
 # Make the venv the default Python
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# SQLite checkpoint file lives in a mount-able volume
-VOLUME ["/app/data"]
-ENV SQLITE_DB_PATH=/app/data/checkpoints.db
-
-# Default: run the Telegram bot
-CMD ["python", "examples/telegram_bot.py"]
+# Default: run the Gradio app
+CMD ["python", "examples/gradio_app.py"]

@@ -1,6 +1,6 @@
 # DeepResearchAgent
 
-A multi-agent research system built with LangGraph that takes a question, researches it deeply across multiple sources, critiques its own findings, and produces a structured report. Runs as a Telegram bot.
+A multi-agent research system built with LangGraph that takes a question, researches it deeply across multiple sources, critiques its own findings, and produces a structured report. Main runtime is a simple Gradio UI.
 
 ---
 
@@ -10,22 +10,22 @@ The idea is simple: instead of a single LLM call, research gets broken into a pi
 
 Built for personal use. Not a SaaS product.
 
-**Stack:** Python 3.12 · LangGraph · OpenAI GPT-4o / GPT-5 · Tavily · python-telegram-bot · uv
+**Stack:** Python 3.12 · LangGraph · OpenAI GPT-4o / GPT-5 · Tavily · Gradio · python-telegram-bot · uv
 
 ---
 
 ## Features
 
-- **Clarification before research** — if the query is ambiguous, the system asks follow-up questions before starting (interrupt/resume via Telegram)
+- **Clarification before research** — if the query is ambiguous, the system asks follow-up questions before starting (interrupt/resume via Gradio and Telegram)
 - **Parallel web search** — multiple Tavily queries run concurrently across the research iteration
 - **Adversarial critique (Red Team)** — a separate model challenges the draft and surfaces gaps, contradictions, or missing angles
 - **Quality evaluation** — a judge model scores the draft and decides whether another research iteration is needed
 - **Context compression** — raw research notes get compressed into a structured knowledge base to stay within context limits
-- **Automatic session management** — each completed research session auto-rotates to a fresh thread; `/reset` also available
-- **Request timeout** — requests cap at a configurable time limit; the bot notifies you instead of hanging
+- **Automatic session management** — each completed research session auto-rotates to a fresh thread
+- **Request timeout** — requests cap at a configurable time limit; runtime returns timeout feedback instead of hanging
 - **API retry** — Tavily and OpenAI calls retry automatically with exponential backoff on transient failures
 - **Structured logging** — all agent activity logged to stdout (optionally to file via `LOG_FILE`)
-- **Health endpoint** — `GET /health` on port 8080 for uptime monitoring
+- **Health endpoint** — `GET /health` on port 8080 for Telegram runtime monitoring
 
 ---
 
@@ -39,7 +39,7 @@ Built for personal use. Not a SaaS product.
 
 | Node | What it does |
 |------|-------------|
-| `clarify_with_user` | Decides if the query needs clarification. If yes, pauses and sends a question to Telegram. Resumes when the user replies. |
+| `clarify_with_user` | Decides if the query needs clarification. If yes, pauses and sends a question to caller runtime. Resumes when the user replies. |
 | `write_research_brief` | Reformulates the (now-clarified) query into a structured research brief with scope, key questions, and constraints. |
 | `write_draft_report` | Generates a first-pass skeleton report using the research brief. This draft drives what the supervisor chooses to research. |
 | `supervisor_subgraph` | Orchestrates the research loop — delegates to researchers, evaluates quality, decides when to stop. |
@@ -73,26 +73,39 @@ git clone https://github.com/yourname/DeepResearchAgent
 cd DeepResearchAgent
 
 cp .env.example .env
-# Edit .env — fill in OPENAI_API_KEY, TAVILY_API_KEY, TELEGRAM_BOT_TOKEN
+# Edit .env — fill in OPENAI_API_KEY and TAVILY_API_KEY
+# TELEGRAM_BOT_TOKEN is only needed if you run Telegram bot runtime
 ```
 
 Install dependencies:
 
 ```bash
-uv sync
+uv sync --dev
 ```
 
-Run:
+Run Gradio (primary runtime):
 
 ```bash
-uv run python examples/telegram_bot.py
+uv run python examples/gradio_app.py
 ```
 
-Or with Docker:
+Optional runtimes:
+
+```bash
+# Telegram bot runtime
+uv run python examples/telegram_bot.py
+
+# CLI smoke run
+uv run python examples/simple_query.py
+```
+
+Docker Compose (Gradio only):
 
 ```bash
 docker compose up --build
 ```
+
+Then open `http://localhost:7860`.
 
 ### Environment variables
 
@@ -102,12 +115,12 @@ See `.env.example` for the full list. Minimum required:
 |----------|-------------|
 | `OPENAI_API_KEY` | OpenAI API key |
 | `TAVILY_API_KEY` | Tavily search API key (free tier available at app.tavily.com) |
-| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather |
 
 Optional variables worth knowing:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `TELEGRAM_BOT_TOKEN` | _(empty)_ | Required only for Telegram bot runtime |
 | `REQUEST_TIMEOUT_SECONDS` | `600` | Max time per research request |
 | `MAX_RESEARCHER_ITERATIONS` | `5` | Max supervisor loop iterations |
 | `LOG_FILE` | _(empty)_ | Path to write log file, e.g. `logs/app.log` |

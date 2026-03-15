@@ -1,9 +1,10 @@
 import asyncio
 import os
 import sys
-import warnings
+from pathlib import Path
 
-from dotenv import load_dotenv
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 from telegram import Update
@@ -16,24 +17,12 @@ from telegram.ext import (
 )
 
 from config.settings import REQUEST_TIMEOUT_SECONDS
-from src.graph import build_main_agent
-from src.logging_config import get_logger, setup_logging
+from src.logging_config import get_logger
+from src.runtime import bootstrap_agent
 from src.server import run_server
 
-# LangChain's with_structured_output() stores parsed results in AIMessage.parsed
-# which Pydantic declares as None, causing harmless serialization warnings.
-warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-load_dotenv()
-
-setup_logging()
+agent = bootstrap_agent()
 logger = get_logger(__name__)
-
-# MemorySaver: state lives in RAM only.
-# Restart → clean slate for all sessions (intentional design choice).
-agent = build_main_agent()
 
 # Background task strong-reference set (prevents GC)
 _background_tasks: set = set()
@@ -49,7 +38,7 @@ async def post_init(application: Application) -> None:
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🔍 Xin chào! Gửi câu hỏi nghiên cứu cho tôi, tôi sẽ phân tích và trả lời chi tiết."
+        "Hello! Send a research question and I will respond with a detailed report."
     )
 
 
@@ -59,8 +48,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reset_counter = context.user_data.get("reset_counter", 0)
     config = {"configurable": {"thread_id": f"tg_{chat_id}_r{reset_counter}"}}
 
-    logger.info("Received message", extra={"chat_id": chat_id, "length": len(user_text)})
-    await update.message.reply_text("🔍 Đang xử lý... Vui lòng chờ.")
+    logger.info(
+        "Received message", extra={"chat_id": chat_id, "length": len(user_text)}
+    )
+    await update.message.reply_text("Processing... Please wait.")
 
     try:
         state = await agent.aget_state(config)
@@ -75,9 +66,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reset_counter += 1
             context.user_data["reset_counter"] = reset_counter
             config = {"configurable": {"thread_id": f"tg_{chat_id}_r{reset_counter}"}}
-            logger.info("Previous session complete, rotating thread", extra={"chat_id": chat_id})
+            logger.info(
+                "Previous session complete, rotating thread", extra={"chat_id": chat_id}
+            )
             await update.message.reply_text(
-                "✨ Phiên nghiên cứu trước đã hoàn thành. Bắt đầu nghiên cứu mới..."
+                "Previous session completed. Starting a new research session..."
             )
             coro = agent.ainvoke(
                 {"messages": [HumanMessage(content=user_text)]}, config=config
@@ -95,10 +88,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         new_state = await agent.aget_state(config)
         if new_state.next:
             question = new_state.tasks[0].interrupts[0].value
-            await update.message.reply_text(f"❓ {question}")
+            await update.message.reply_text(f"Clarification needed: {question}")
         elif "final_report" in result:
             report = result["final_report"]
-            logger.info("Research complete", extra={"chat_id": chat_id, "length": len(report)})
+            logger.info(
+                "Research complete", extra={"chat_id": chat_id, "length": len(report)}
+            )
             for i in range(0, len(report), 4096):
                 await update.message.reply_text(report[i : i + 4096])
         else:
@@ -109,11 +104,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except asyncio.TimeoutError:
         logger.error("Request timed out", extra={"chat_id": chat_id})
         await update.message.reply_text(
-            f"⏱️ Quá thời gian xử lý ({REQUEST_TIMEOUT_SECONDS}s). Vui lòng thử lại với câu hỏi đơn giản hơn."
+            f"Request timed out ({REQUEST_TIMEOUT_SECONDS}s). Please retry with a simpler question."
         )
     except Exception:
         logger.exception("Error handling message", extra={"chat_id": chat_id})
-        await update.message.reply_text("❌ Có lỗi xảy ra. Vui lòng thử lại.")
+        await update.message.reply_text("An error occurred. Please try again.")
 
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -122,7 +117,7 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     counter = context.user_data.get("reset_counter", 0) + 1
     context.user_data["reset_counter"] = counter
     logger.info("Session reset", extra={"chat_id": chat_id, "counter": counter})
-    await update.message.reply_text("🔄 Đã reset. Gửi câu hỏi mới để bắt đầu.")
+    await update.message.reply_text("Session reset. Send a new question to start.")
 
 
 def main():
@@ -131,12 +126,7 @@ def main():
         logger.critical("TELEGRAM_BOT_TOKEN not found in .env")
         return
 
-    app = (
-        Application.builder()
-        .token(token)
-        .post_init(post_init)
-        .build()
-    )
+    app = Application.builder().token(token).post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("reset", reset))

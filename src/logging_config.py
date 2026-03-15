@@ -1,7 +1,7 @@
 """
 Centralized logging configuration for DeepResearchAgent.
 
-Call setup_logging() once at application entry point (telegram_bot.py, simple_query.py).
+Call setup_logging() once at application entry point (gradio_app.py, telegram_bot.py, simple_query.py).
 All modules obtain a logger via: logger = logging.getLogger("deepresearch.<module>")
 
 Environment variables:
@@ -13,12 +13,13 @@ Environment variables:
 import logging
 import logging.config
 import os
+from typing import Any
 
 _LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 _LOG_FILE = os.getenv("LOG_FILE", "").strip()
 
 _handlers = ["console"]
-_handler_cfg: dict = {
+_handler_cfg: dict[str, dict[str, Any]] = {
     "console": {
         "class": "logging.StreamHandler",
         "formatter": "standard",
@@ -28,6 +29,7 @@ _handler_cfg: dict = {
 
 if _LOG_FILE:
     import os as _os
+
     _os.makedirs(_os.path.dirname(_LOG_FILE) or ".", exist_ok=True)
     _handler_cfg["file"] = {
         "class": "logging.handlers.RotatingFileHandler",

@@ -1,5 +1,4 @@
-from config.settings import BASE_MODEL, OPENAI_API_KEY
-from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from .agents import researcher, supervisor, writer
@@ -11,24 +10,6 @@ from .models.state import (
     SupervisorState,
 )
 from .nodes import clarification, context, evaluation, research
-from .tools.common import ConductResearch, ResearchComplete, think_tool
-from .tools.search import tavily_search
-
-# Initialize models
-base_model = init_chat_model(model=BASE_MODEL, api_key=OPENAI_API_KEY)
-
-# Initialize supervisor tools
-supervisor_tools = [
-    ConductResearch,
-    ResearchComplete,
-    think_tool,
-    writer.refine_draft_report,
-]
-supervisor_model_with_tools = base_model.bind_tools(supervisor_tools)
-
-# Initialize researcher tools
-researcher_tools = [tavily_search, think_tool]
-model_with_tools = base_model.bind_tools(researcher_tools)
 
 
 def build_researcher_agent():
@@ -70,9 +51,9 @@ def build_supervisor_agent(researcher_agent):
     return supervisor_builder.compile()
 
 
-
 def build_main_agent():
     """Build main agent graph."""
+    checkpointer = InMemorySaver()
     researcher_agent = build_researcher_agent()
     supervisor_agent = build_supervisor_agent(researcher_agent)
 
@@ -90,4 +71,4 @@ def build_main_agent():
     builder.add_edge("supervisor_subgraph", "final_report_generation")
     builder.add_edge("final_report_generation", END)
 
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)

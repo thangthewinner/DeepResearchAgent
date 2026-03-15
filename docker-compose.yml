@@ -1,42 +1,7 @@
 services:
-  # ── Existing: Telegram bot ────────────────────────────────────────────────
-  telegram-bot:
+  gradio:
     build: .
     env_file: .env
-    volumes:
-      - checkpoints:/app/data
-    restart: unless-stopped
-
-  # ── New: OpenWebUI-compatible API server ──────────────────────────────────
-  webui-server:
-    build: .
-    command: uv run uvicorn examples.webui_server:app --host 0.0.0.0 --port 8080
-    env_file: .env
     ports:
-      - "8080:8080"
-    volumes:
-      - checkpoints:/app/data
+      - "7860:7860"
     restart: unless-stopped
-
-  # ── New: OpenWebUI frontend ───────────────────────────────────────────────
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    ports:
-      - "3000:8080"
-    environment:
-      # Point OpenWebUI at our LangGraph API server (internal Docker network)
-      - OPENAI_API_BASE_URL=http://webui-server:8080/v1
-      # OpenWebUI requires a key field; our server does not validate it
-      - OPENAI_API_KEY=deep-research-local
-      # Disable Ollama since we use a custom OpenAI-compatible backend
-      - ENABLE_OLLAMA_API=false
-    volumes:
-      - open-webui-data:/app/backend/data
-    depends_on:
-      - webui-server
-    restart: unless-stopped
-
-volumes:
-  checkpoints:
-  open-webui-data:
-
