@@ -8,3 +8,9 @@ checkpoints*
 logs/
 .claude/
 explain.md
+.agents/
+.codex/
+DeepSearchAgent-Demo/
+.mypy_cache/
+.ruff_cache/
+upgrade.md

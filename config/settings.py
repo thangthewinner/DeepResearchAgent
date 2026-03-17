@@ -53,11 +53,7 @@ class Settings(BaseSettings):
         default=120, alias="RESEARCHER_TIMEOUT_SECONDS"
     )
 
-    # --- LangSmith Observability (optional) ---
-    # Set these env vars to enable automatic tracing on smith.langchain.com
-    # LANGCHAIN_TRACING_V2=true
-    # LANGCHAIN_API_KEY=lsv2_pt_...
-    # LANGCHAIN_PROJECT=deepresearch-prod
+    # --- LangSmith Observability ---
     langchain_tracing_v2: Optional[str] = Field(
         default=None, alias="LANGCHAIN_TRACING_V2"
     )
