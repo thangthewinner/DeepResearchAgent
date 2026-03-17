@@ -1,5 +1,6 @@
 from langchain_core.messages import HumanMessage
 
+from config.settings import DRAFT_MAX_TOKENS
 from ..models.llm import creative_model
 from ..models.schemas import DraftReport
 from ..models.state import AgentState
@@ -19,7 +20,8 @@ def write_draft_report(state: AgentState) -> dict:
     )
 
     response = structured_output_model.invoke(
-        [HumanMessage(content=draft_report_prompt_formatted)]
+        [HumanMessage(content=draft_report_prompt_formatted)],
+        config={"max_tokens": DRAFT_MAX_TOKENS},
     )
 
     return {

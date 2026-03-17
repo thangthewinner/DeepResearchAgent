@@ -1,8 +1,10 @@
 from typing import Literal
 
 from langchain_core.messages import AIMessage, HumanMessage, get_buffer_string
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command, interrupt
 
+from config.settings import BRIEF_MAX_TOKENS, CLARIFY_MAX_TOKENS
 from ..models.llm import base_model as model
 
 from ..models.schemas import ClarifyWithUser, ResearchQuestion
@@ -33,7 +35,8 @@ def clarify_with_user(
                     messages=messages_text, date=current_date
                 )
             )
-        ]
+        ],
+        config=RunnableConfig(max_tokens=CLARIFY_MAX_TOKENS),
     )
 
     if response.need_clarification:
@@ -71,7 +74,8 @@ def write_research_brief(state: AgentState) -> Command[Literal["write_draft_repo
                     date=get_today_str(),
                 )
             )
-        ]
+        ],
+        config={"max_tokens": BRIEF_MAX_TOKENS},
     )
 
     return Command(

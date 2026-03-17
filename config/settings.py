@@ -45,6 +45,31 @@ class Settings(BaseSettings):
     compress_max_tokens: int = Field(default=16000, alias="COMPRESS_MAX_TOKENS")
     writer_max_tokens: int = Field(default=16000, alias="WRITER_MAX_TOKENS")
 
+    # Clarification nodes
+    clarify_max_tokens: int = Field(default=1000, alias="CLARIFY_MAX_TOKENS")
+    brief_max_tokens: int = Field(default=3000, alias="BRIEF_MAX_TOKENS")
+
+    # Draft generation
+    draft_max_tokens: int = Field(default=16000, alias="DRAFT_MAX_TOKENS")
+
+    # Researcher agent
+    researcher_llm_max_tokens: int = Field(
+        default=3000, alias="RESEARCHER_LLM_MAX_TOKENS"
+    )
+
+    # Supervisor
+    supervisor_max_tokens: int = Field(default=3000, alias="SUPERVISOR_MAX_TOKENS")
+    red_team_max_tokens: int = Field(default=6000, alias="RED_TEAM_MAX_TOKENS")
+
+    # Context pruning
+    context_prune_max_tokens: int = Field(
+        default=2000, alias="CONTEXT_PRUNE_MAX_TOKENS"
+    )
+
+    # Writer
+    refine_max_tokens: int = Field(default=16000, alias="REFINE_MAX_TOKENS")
+    final_report_max_tokens: int = Field(default=20000, alias="FINAL_REPORT_MAX_TOKENS")
+
     # --- Timeouts ---
     # Total time budget for one full research request (seconds)
     request_timeout_seconds: int = Field(default=600, alias="REQUEST_TIMEOUT_SECONDS")
@@ -87,6 +112,27 @@ COMPRESSOR_MODEL = settings.compressor_model
 
 COMPRESS_MAX_TOKENS = settings.compress_max_tokens
 WRITER_MAX_TOKENS = settings.writer_max_tokens
+
+# Clarification nodes
+CLARIFY_MAX_TOKENS = settings.clarify_max_tokens
+BRIEF_MAX_TOKENS = settings.brief_max_tokens
+
+# Draft generation
+DRAFT_MAX_TOKENS = settings.draft_max_tokens
+
+# Researcher agent
+RESEARCHER_LLM_MAX_TOKENS = settings.researcher_llm_max_tokens
+
+# Supervisor
+SUPERVISOR_MAX_TOKENS = settings.supervisor_max_tokens
+RED_TEAM_MAX_TOKENS = settings.red_team_max_tokens
+
+# Context pruning
+CONTEXT_PRUNE_MAX_TOKENS = settings.context_prune_max_tokens
+
+# Writer
+REFINE_MAX_TOKENS = settings.refine_max_tokens
+FINAL_REPORT_MAX_TOKENS = settings.final_report_max_tokens
 
 REQUEST_TIMEOUT_SECONDS = settings.request_timeout_seconds
 RESEARCHER_TIMEOUT_SECONDS = settings.researcher_timeout_seconds

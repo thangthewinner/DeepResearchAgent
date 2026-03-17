@@ -75,7 +75,7 @@ async def _invoke_agent(
     if new_state.next:
         question = new_state.tasks[0].interrupts[0].value
         logger.info("Agent needs clarification", extra={"thread_id": thread_id})
-        return f"Clarification needed: {question}", active_session
+        return f"{question}", active_session
 
     report = result.get("final_report")
     if report:

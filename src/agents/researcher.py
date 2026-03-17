@@ -7,6 +7,7 @@ from langchain_core.messages import (
     filter_messages,
 )
 
+from config.settings import COMPRESS_MAX_TOKENS, RESEARCHER_LLM_MAX_TOKENS
 from ..models.llm import base_model, compress_model
 
 from ..models.state import ResearcherState
@@ -41,7 +42,8 @@ def llm_call(state: ResearcherState):
                         content=RESEARCH_AGENT_PROMPT.format(date=get_today_str())
                     )
                 ]
-                + list(state.get("researcher_messages", []))
+                + list(state.get("researcher_messages", [])),
+                config={"max_tokens": RESEARCHER_LLM_MAX_TOKENS},
             )
         ]
     }
@@ -106,7 +108,9 @@ def compress_research(state: ResearcherState) -> dict:
         ]
     )
 
-    response = compress_model.invoke(messages)
+    response = compress_model.invoke(
+        messages, config={"max_tokens": COMPRESS_MAX_TOKENS}
+    )
 
     raw_notes = [
         str(m.content)
