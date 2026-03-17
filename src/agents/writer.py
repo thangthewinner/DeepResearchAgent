@@ -3,6 +3,7 @@ from typing import Annotated
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import InjectedToolArg, tool
 
+from config.settings import FINAL_REPORT_MAX_TOKENS, REFINE_MAX_TOKENS
 from ..models.llm import writer_model
 
 from ..models.state import AgentState
@@ -39,7 +40,8 @@ def refine_draft_report(
     )
 
     draft_report_response = writer_model.invoke(
-        [HumanMessage(content=draft_report_prompt)]
+        [HumanMessage(content=draft_report_prompt)],
+        config={"max_tokens": REFINE_MAX_TOKENS},
     )
     return draft_report_response.content
 
@@ -54,7 +56,10 @@ def final_report_generation(state: AgentState) -> dict:
     # Combine structured knowledge_base facts with raw notes
     kb_facts = state.get("knowledge_base", [])
     kb_section = "\n".join(
-        [f"- [{f.confidence_score}%] {f.content} (source: {f.source_url})" for f in kb_facts]
+        [
+            f"- [{f.confidence_score}%] {f.content} (source: {f.source_url})"
+            for f in kb_facts
+        ]
     )
     raw_notes = "\n".join(state.get("notes", []))
 
@@ -71,6 +76,9 @@ def final_report_generation(state: AgentState) -> dict:
         date=get_today_str(),
     )
 
-    response = writer_model.invoke([HumanMessage(content=prompt)])
+    response = writer_model.invoke(
+        [HumanMessage(content=prompt)],
+        config={"max_tokens": FINAL_REPORT_MAX_TOKENS},
+    )
 
     return {"final_report": response.content}

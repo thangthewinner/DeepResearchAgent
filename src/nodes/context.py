@@ -2,6 +2,7 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from config.settings import CONTEXT_PRUNE_MAX_TOKENS
 from ..logging_config import get_logger
 from ..models.llm import compressor_model
 from ..models.schemas import FactExtraction
@@ -25,7 +26,10 @@ async def context_pruning_node(state: SupervisorState) -> dict[str, Any]:
 
     try:
         structured_llm = compressor_model.with_structured_output(FactExtraction)
-        result = await structured_llm.ainvoke([HumanMessage(content=prompt)])
+        result = await structured_llm.ainvoke(
+            [HumanMessage(content=prompt)],
+            config={"max_tokens": CONTEXT_PRUNE_MAX_TOKENS},
+        )
         new_facts = result.new_facts
 
         message = (

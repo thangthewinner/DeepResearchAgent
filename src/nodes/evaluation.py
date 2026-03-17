@@ -1,5 +1,6 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from config.settings import RED_TEAM_MAX_TOKENS
 from ..models.llm import critic_model, judge_model
 from ..models.schemas import Critique, EvaluationResult
 from ..models.state import SupervisorState
@@ -17,7 +18,9 @@ async def red_team_node(state: SupervisorState) -> dict:
 
     prompt = RED_TEAM_PROMPT.format(draft=draft)
 
-    response = await critic_model.ainvoke([HumanMessage(content=prompt)])
+    response = await critic_model.ainvoke(
+        [HumanMessage(content=prompt)], config={"max_tokens": RED_TEAM_MAX_TOKENS}
+    )
     content = response.content
 
     if "PASS" in content and len(content) < 20:
@@ -35,7 +38,9 @@ async def red_team_node(state: SupervisorState) -> dict:
     }
 
 
-async def evaluate_draft_quality(research_brief: str, draft_report: str) -> EvaluationResult:
+async def evaluate_draft_quality(
+    research_brief: str, draft_report: str
+) -> EvaluationResult:
     """
     'Self-Evolution' scoring mechanism. LLM-as-a-judge quality evaluate.
     """

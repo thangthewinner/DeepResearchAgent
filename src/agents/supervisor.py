@@ -10,7 +10,11 @@ from langchain_core.messages import (
 from langgraph.graph import END
 from langgraph.types import Command
 
-from config.settings import MAX_CONCURRENT_RESEARCHERS, MAX_RESEARCHER_ITERATIONS
+from config.settings import (
+    MAX_CONCURRENT_RESEARCHERS,
+    MAX_RESEARCHER_ITERATIONS,
+    SUPERVISOR_MAX_TOKENS,
+)
 from ..models.llm import base_model
 
 from ..models.schemas import QualityMetric
@@ -36,7 +40,6 @@ supervisor_model_with_tools = base_model.bind_tools(supervisor_tools)
 
 max_concurrent_researchers = MAX_CONCURRENT_RESEARCHERS
 max_researcher_iterations = MAX_RESEARCHER_ITERATIONS
-
 
 
 def get_notes_from_tool_calls(messages: list) -> list[str]:
@@ -90,7 +93,9 @@ async def supervisor_node(
             )
         )
 
-    response = await supervisor_model_with_tools.ainvoke(messages)
+    response = await supervisor_model_with_tools.ainvoke(
+        messages, config={"max_tokens": SUPERVISOR_MAX_TOKENS}
+    )
 
     return Command(
         goto="supervisor_tools",
@@ -118,18 +123,15 @@ def make_supervisor_tools_node(researcher_agent):
             state.get("research_iterations", 0) >= max_researcher_iterations
         )
         no_tool_calls = not tool_calls
-        research_complete = any(
-            tc["name"] == "ResearchComplete" for tc in tool_calls
-        )
+        research_complete = any(tc["name"] == "ResearchComplete" for tc in tool_calls)
 
         if exceeded_iterations or no_tool_calls or research_complete:
             kb = state.get("knowledge_base", [])
-            kb_notes = [
-                f"{f.content} (Confidence: {f.confidence_score})"
-                for f in kb
-            ]
+            kb_notes = [f"{f.content} (Confidence: {f.confidence_score})" for f in kb]
             if not kb_notes:
-                kb_notes = get_notes_from_tool_calls(state.get("supervisor_messages", []))
+                kb_notes = get_notes_from_tool_calls(
+                    state.get("supervisor_messages", [])
+                )
 
             return Command(
                 goto=END,
@@ -146,9 +148,7 @@ def make_supervisor_tools_node(researcher_agent):
         refine_report_calls = [
             t for t in tool_calls if t["name"] == "refine_draft_report"
         ]
-        think_calls = [
-            t for t in tool_calls if t["name"] == "think_tool"
-        ]
+        think_calls = [t for t in tool_calls if t["name"] == "think_tool"]
 
         tool_messages = []
         all_raw_notes = []
