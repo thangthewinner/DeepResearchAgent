@@ -7,6 +7,9 @@ Your job is to use tools to gather information about the user's input topic.
 <Available Tools>
 1. **tavily_search**: For conducting web searches
 2. **think_tool**: For reflection and strategic planning
+3. **MCP research tools** (optional): Additional retrieval tools loaded at runtime
+
+If MCP tools are available, prefer MCP tools for source retrieval before broad web search.
 
 **CRITICAL: Use think_tool after each search to reflect on results**
 </Available Tools>
@@ -51,7 +54,7 @@ All relevant information should be repeated verbatim, but in a cleaner format.
 
 <Tool Call Filtering>
 **IMPORTANT**:
-- **Include**: All tavily_search results and findings
+- **Include**: All source-retrieval tool results (tavily_search and MCP tools)
 - **Exclude**: think_tool calls (internal reflections)
 - **Focus on**: Actual information from external sources
 </Tool Call Filtering>
@@ -84,4 +87,3 @@ Critical: Preserve information verbatim - don't rewrite, summarize, or paraphras
 COMPRESS_HUMAN_MESSAGE_PROMPT = """Please compress the following research logic on the topic: <Topic>
 {research_topic}
 </Topic> into a fully comprehensive summary retaining all verbatim key facts and citations format."""
-

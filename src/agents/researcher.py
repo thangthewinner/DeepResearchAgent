@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from langchain_core.messages import (
     HumanMessage,
@@ -16,24 +16,23 @@ from ..prompts.researcher import (
     COMPRESS_RESEARCH_PROMPT,
     RESEARCH_AGENT_PROMPT,
 )
-from ..tools.common import think_tool
-from ..tools.search import tavily_search
+from ..tools.registry import get_researcher_tools
 from ..utils.date import get_today_str
 
-# Initialize researcher tools
-researcher_tools = [tavily_search, think_tool]
-model_with_tools = base_model.bind_tools(researcher_tools)
 
-tools_by_name = {
-    "tavily_search": tavily_search,
-    "think_tool": think_tool,
-}
+def _get_runtime_tools() -> tuple[list[Any], dict[str, Any]]:
+    """Return the current researcher tools and name lookup map."""
+    tools = get_researcher_tools()
+    return tools, {tool.name: tool for tool in tools}
 
 
 def llm_call(state: ResearcherState):
     """
     Brain of researcher: analyzes state to branch off to an action/tool or finish
     """
+    researcher_tools, _ = _get_runtime_tools()
+    model_with_tools = base_model.bind_tools(researcher_tools)
+
     return {
         "researcher_messages": [
             model_with_tools.invoke(
@@ -53,6 +52,7 @@ def tool_node(state: ResearcherState):
     """
     Hands of researcher: executes tool calls
     """
+    _, tools_by_name = _get_runtime_tools()
     tool_calls = state["researcher_messages"][-1].tool_calls
 
     observations = []

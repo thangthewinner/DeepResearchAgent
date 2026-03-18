@@ -77,12 +77,15 @@ Please create a detailed answer to the overall research brief that:
 
 def _build_report_prompt(source_context: str, extra_context: str = "") -> str:
     """Compose a full report prompt from header + body."""
-    return _REPORT_HEADER_TEMPLATE.format(
-        source_context=source_context,
-        research_brief="{research_brief}",
-        date="{date}",
-        extra_context=extra_context,
-    ) + _REPORT_BODY_TEMPLATE
+    return (
+        _REPORT_HEADER_TEMPLATE.format(
+            source_context=source_context,
+            research_brief="{research_brief}",
+            date="{date}",
+            extra_context=extra_context,
+        )
+        + _REPORT_BODY_TEMPLATE
+    )
 
 
 DRAFT_REPORT_GENERATION_PROMPT = _build_report_prompt(
@@ -104,9 +107,10 @@ Here are the findings from the research that you conducted:
 """,
 )
 
-FINAL_REPORT_GENERATION_WITH_HELPFULNESS_INSIGHTFULNESS_HIT_CITATION_PROMPT = _build_report_prompt(
-    source_context=" conducted and draft report",
-    extra_context="""
+FINAL_REPORT_GENERATION_WITH_HELPFULNESS_INSIGHTFULNESS_HIT_CITATION_PROMPT = (
+    _build_report_prompt(
+        source_context=" conducted and draft report",
+        extra_context="""
 Here are the findings from the research that you conducted:
 <Findings>
 {findings}
@@ -117,4 +121,5 @@ Here is the draft report:
 {draft_report}
 </Draft Report>
 """,
+    )
 )

@@ -88,6 +88,14 @@ class Settings(BaseSettings):
     # --- Logging ---
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
+    # --- MCP Integration ---
+    mcp_enabled: bool = Field(default=False, alias="MCP_ENABLED")
+    mcp_server_transport: str = Field(default="stdio", alias="MCP_SERVER_TRANSPORT")
+    mcp_server_command: str = Field(default="", alias="MCP_SERVER_COMMAND")
+    mcp_server_args: str = Field(default="", alias="MCP_SERVER_ARGS")
+    mcp_server_url: str = Field(default="", alias="MCP_SERVER_URL")
+    mcp_allowed_tools: str = Field(default="", alias="MCP_ALLOWED_TOOLS")
+
 
 # Singleton — loaded once at import time.
 # Raises ValidationError immediately if required keys are missing.
@@ -136,3 +144,10 @@ FINAL_REPORT_MAX_TOKENS = settings.final_report_max_tokens
 
 REQUEST_TIMEOUT_SECONDS = settings.request_timeout_seconds
 RESEARCHER_TIMEOUT_SECONDS = settings.researcher_timeout_seconds
+
+MCP_ENABLED = settings.mcp_enabled
+MCP_SERVER_TRANSPORT = settings.mcp_server_transport
+MCP_SERVER_COMMAND = settings.mcp_server_command
+MCP_SERVER_ARGS = settings.mcp_server_args
+MCP_SERVER_URL = settings.mcp_server_url
+MCP_ALLOWED_TOOLS = settings.mcp_allowed_tools
