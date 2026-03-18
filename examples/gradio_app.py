@@ -101,26 +101,23 @@ def build_app() -> gr.Blocks:
         )
 
         session_state = gr.State(value=_new_session_context())
-        chatbot = gr.Chatbot(label="Research Chat")
+        chatbot = gr.Chatbot(label="Research Chat", height=600)
         textbox = gr.Textbox(
             label="Your question",
             placeholder="Example: Compare leading AI models released in 2026.",
-            lines=3,
+            lines=1,
         )
         send_btn = gr.Button("Send", variant="primary")
-        clear_btn = gr.Button("Clear")
-
-        def _clear_chat() -> tuple[list[dict[str, str]], SessionContext]:
-            return [], _new_session_context()
 
         async def _submit(
             user_text: str,
             history: list[dict[str, str]],
             session_context: SessionContext,
-        ) -> tuple[str, list[dict[str, str]], SessionContext]:
+        ):
             message = user_text.strip()
             if not message:
-                return "", history, session_context
+                yield "", history, session_context
+                return
 
             logger.info(
                 "Received Gradio message",
@@ -129,6 +126,12 @@ def build_app() -> gr.Blocks:
                     "length": len(message),
                 },
             )
+
+            in_progress_history = history + [
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": "Thinking..."},
+            ]
+            yield "", in_progress_history, session_context
 
             try:
                 response, updated_context = await _invoke_agent(
@@ -152,11 +155,11 @@ def build_app() -> gr.Blocks:
                 response = "An error occurred. Please try again."
                 updated_context = session_context
 
-            new_history = history + [
+            final_history = history + [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": response},
             ]
-            return "", new_history, updated_context
+            yield "", final_history, updated_context
 
         send_btn.click(
             _submit,
@@ -168,7 +171,6 @@ def build_app() -> gr.Blocks:
             inputs=[textbox, chatbot, session_state],
             outputs=[textbox, chatbot, session_state],
         )
-        clear_btn.click(_clear_chat, outputs=[chatbot, session_state])
 
     return app
 
