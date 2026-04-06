@@ -36,9 +36,10 @@ async def context_pruning_node(state: SupervisorState) -> dict[str, Any]:
             "[SYSTEM] Context Pruned. "
             f"{len(new_facts)} new facts added to Knowledge Base. Raw notes buffer cleared."
         )
-    except Exception:
+    except Exception as e:
         logger.exception(
-            "Context pruning failed", extra={"raw_notes_count": len(raw_notes)}
+            "Context pruning failed",
+            extra={"raw_notes_count": len(raw_notes), "error_type": type(e).__name__},
         )
         new_facts = []
         message = "[SYSTEM] Context Pruning failed."

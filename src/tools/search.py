@@ -9,7 +9,7 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-from tavily import TavilyClient  # type: ignore[import-untyped]
+from tavily import TavilyClient  # pyright: ignore[reportMissingTypeStubs]
 
 from ..logging_config import get_logger
 from ..utils.evidence import derive_source_domain, format_evidence_record
@@ -98,10 +98,10 @@ def tavily_search_multiple(
                 topic=topic,
             )
             search_docs.append(result)
-        except Exception:
+        except Exception as e:
             logger.exception(
                 "Failed to fetch Tavily results",
-                extra={"query": query},
+                extra={"query": query, "error_type": type(e).__name__},
             )
     return search_docs
 

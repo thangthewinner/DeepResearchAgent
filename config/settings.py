@@ -87,7 +87,7 @@ class Settings(BaseSettings):
 
 # Singleton — loaded once at import time.
 # Raises ValidationError immediately if required keys are missing.
-settings = Settings()  # type: ignore[call-arg]
+settings = Settings()  # pyright: ignore[reportCallIssue] - Pydantic BaseSettings handles env vars
 
 # Re-export flat constants for backward compatibility with existing imports.
 OPENAI_API_KEY = settings.openai_api_key
