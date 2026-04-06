@@ -25,6 +25,7 @@ from ..prompts.supervisor import (
 )
 from ..tools.common import ConductResearch, ResearchComplete, think_tool
 from ..utils.date import get_today_str
+from ..utils.evidence import format_fact_for_writer, sort_facts_by_strength
 
 # Initialize supervisor tools
 from .writer import refine_draft_report
@@ -197,9 +198,10 @@ def make_supervisor_tools_node(researcher_agent):
                 all_raw_notes.extend(result.get("raw_notes", []))
 
         for tool_call in refine_report_calls:
-            kb = state.get("knowledge_base", [])
+            kb = sort_facts_by_strength(state.get("knowledge_base", []))
             kb_str = (
-                "CONFIRMED FACTS:\n" + "\n".join([f"- {f.content}" for f in kb])
+                "CONFIRMED FACTS:\n"
+                + "\n".join([format_fact_for_writer(fact) for fact in kb])
                 if kb
                 else "\n".join(
                     get_notes_from_tool_calls(state.get("supervisor_messages", []))

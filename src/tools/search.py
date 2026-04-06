@@ -12,6 +12,7 @@ from tenacity import (
 from tavily import TavilyClient  # type: ignore[import-untyped]
 
 from ..logging_config import get_logger
+from ..utils.evidence import derive_source_domain, format_evidence_record
 from ..utils.summarization import summarize_webpage_content
 
 logger = get_logger(__name__)
@@ -140,17 +141,24 @@ def process_search_results(
 
 
 def format_search_output(summarized_results: dict[str, dict[str, str]]) -> str:
-    """Format final search results."""
+    """Format final search results as provenance-rich evidence records."""
     if not summarized_results:
         return "No valid search results found."
 
-    formatted_output = "Search results:\n\n"
-    for i, (url, result) in enumerate(summarized_results.items(), 1):
-        formatted_output += f"\n--- SOURCE {i}: {result['title']} ---\n"
-        formatted_output += f"URL: {url}\n\n"
-        formatted_output += f"SUMMARY:\n{result['content']}\n\n"
-        formatted_output += "-" * 80 + "\n"
-    return formatted_output
+    records = []
+    for url, result in summarized_results.items():
+        records.append(
+            format_evidence_record(
+                tool_name="tavily_search",
+                source_type="web",
+                evidence_type="snippet",
+                content=result["content"],
+                source_url=url,
+                source_title=result["title"],
+                source_domain=derive_source_domain(url),
+            )
+        )
+    return "\n\n".join(records)
 
 
 @tool(parse_docstring=True)

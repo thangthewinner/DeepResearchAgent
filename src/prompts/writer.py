@@ -44,13 +44,16 @@ Make sure the final answer report is in the SAME language as the human messages 
 Format the report in clear markdown with proper structure and include source references where appropriate.
 
 <Citation Rules>
-- Assign each unique URL a single citation number in your text
-- End with ### Sources that lists each source with corresponding numbers
-- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
+- Assign each unique URL a single citation number in your text.
+- End with ### Sources that lists each source with corresponding numbers.
+- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose.
 - Each source should be a separate line item in a list, so that in markdown it is rendered as a list.
+- Prefer stronger evidence over weaker evidence when multiple sources support the same claim. In general, rank sources like this: official documents and standards, parsed PDFs, scholarly sources, extracted full-page content, then snippet-only web evidence.
+- When a fact includes a useful locator such as a page number, page range, DOI, section, or arXiv identifier, include that locator in the prose or in the source list when it helps the reader verify the claim.
+- Keep the source list easy to read: use the source title when available, keep the direct URL, and include a locator only when it adds value.
 - Example format:
   [1] Source Title: URL
-  [2] Source Title: URL
+  [2] Source Title (page 14): URL
 - Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information.
 </Citation Rules>
 """
@@ -77,12 +80,15 @@ Please create a detailed answer to the overall research brief that:
 
 def _build_report_prompt(source_context: str, extra_context: str = "") -> str:
     """Compose a full report prompt from header + body."""
-    return _REPORT_HEADER_TEMPLATE.format(
-        source_context=source_context,
-        research_brief="{research_brief}",
-        date="{date}",
-        extra_context=extra_context,
-    ) + _REPORT_BODY_TEMPLATE
+    return (
+        _REPORT_HEADER_TEMPLATE.format(
+            source_context=source_context,
+            research_brief="{research_brief}",
+            date="{date}",
+            extra_context=extra_context,
+        )
+        + _REPORT_BODY_TEMPLATE
+    )
 
 
 DRAFT_REPORT_GENERATION_PROMPT = _build_report_prompt(
@@ -104,9 +110,10 @@ Here are the findings from the research that you conducted:
 """,
 )
 
-FINAL_REPORT_GENERATION_WITH_HELPFULNESS_INSIGHTFULNESS_HIT_CITATION_PROMPT = _build_report_prompt(
-    source_context=" conducted and draft report",
-    extra_context="""
+FINAL_REPORT_GENERATION_WITH_HELPFULNESS_INSIGHTFULNESS_HIT_CITATION_PROMPT = (
+    _build_report_prompt(
+        source_context=" conducted and draft report",
+        extra_context="""
 Here are the findings from the research that you conducted:
 <Findings>
 {findings}
@@ -117,4 +124,5 @@ Here is the draft report:
 {draft_report}
 </Draft Report>
 """,
+    )
 )

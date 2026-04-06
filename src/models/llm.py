@@ -24,18 +24,27 @@ from config.settings import (
 base_model = init_chat_model(model=BASE_MODEL, api_key=OPENAI_API_KEY, max_retries=3)
 
 # Creative model for draft generation
-creative_model = init_chat_model(model=CREATIVE_MODEL, api_key=OPENAI_API_KEY, max_retries=3)
+creative_model = init_chat_model(
+    model=CREATIVE_MODEL, api_key=OPENAI_API_KEY, max_retries=3
+)
 
 # Writer model for final report
-writer_model = init_chat_model(model=WRITER_MODEL, api_key=OPENAI_API_KEY, max_retries=3)
+writer_model = init_chat_model(
+    model=WRITER_MODEL, api_key=OPENAI_API_KEY, max_retries=3
+)
 
 # Compress model for researcher findings
 compress_model = init_chat_model(
-    model=COMPRESS_MODEL, max_tokens=COMPRESS_MAX_TOKENS, api_key=OPENAI_API_KEY, max_retries=3
+    model=COMPRESS_MODEL,
+    max_tokens=COMPRESS_MAX_TOKENS,
+    api_key=OPENAI_API_KEY,
+    max_retries=3,
 )
 
 # Fast/cheap model for context pruning
-compressor_model = init_chat_model(model=COMPRESSOR_MODEL, api_key=OPENAI_API_KEY, max_retries=3)
+compressor_model = init_chat_model(
+    model=COMPRESSOR_MODEL, api_key=OPENAI_API_KEY, max_retries=3
+)
 
 # Summarization model for webpage content
 summarization_model = init_chat_model(
@@ -43,7 +52,9 @@ summarization_model = init_chat_model(
 )
 
 # Adversarial critic model
-critic_model = init_chat_model(model=CRITIC_MODEL, api_key=OPENAI_API_KEY, max_retries=3)
+critic_model = init_chat_model(
+    model=CRITIC_MODEL, api_key=OPENAI_API_KEY, max_retries=3
+)
 
 # Quality judge model
 judge_model = init_chat_model(model=JUDGE_MODEL, api_key=OPENAI_API_KEY, max_retries=3)

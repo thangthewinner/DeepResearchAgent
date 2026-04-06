@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from langchain_core.messages import (
     HumanMessage,
@@ -8,40 +8,40 @@ from langchain_core.messages import (
 )
 
 from config.settings import COMPRESS_MAX_TOKENS, RESEARCHER_LLM_MAX_TOKENS
-from ..models.llm import base_model, compress_model
 
+from ..models.llm import base_model, compress_model
 from ..models.state import ResearcherState
 from ..prompts.researcher import (
     COMPRESS_HUMAN_MESSAGE_PROMPT,
     COMPRESS_RESEARCH_PROMPT,
-    RESEARCH_AGENT_PROMPT,
+    build_research_agent_prompt,
 )
-from ..tools.common import think_tool
-from ..tools.search import tavily_search
+from ..tools.registry import get_researcher_tools
 from ..utils.date import get_today_str
 
-# Initialize researcher tools
-researcher_tools = [tavily_search, think_tool]
-model_with_tools = base_model.bind_tools(researcher_tools)
 
-tools_by_name = {
-    "tavily_search": tavily_search,
-    "think_tool": think_tool,
-}
+def _get_runtime_tools() -> tuple[list[Any], dict[str, Any]]:
+    """Return the current researcher tools and name lookup map."""
+    tools = get_researcher_tools()
+    return tools, {tool.name: tool for tool in tools}
 
 
 def llm_call(state: ResearcherState):
     """
     Brain of researcher: analyzes state to branch off to an action/tool or finish
     """
+    researcher_tools, _ = _get_runtime_tools()
+    model_with_tools = base_model.bind_tools(researcher_tools)
+
+    system_prompt = build_research_agent_prompt(
+        has_scholarly=False,
+        date=get_today_str()
+    )
+
     return {
         "researcher_messages": [
             model_with_tools.invoke(
-                [
-                    SystemMessage(
-                        content=RESEARCH_AGENT_PROMPT.format(date=get_today_str())
-                    )
-                ]
+                [SystemMessage(content=system_prompt)]
                 + list(state.get("researcher_messages", [])),
                 config={"max_tokens": RESEARCHER_LLM_MAX_TOKENS},
             )
@@ -49,17 +49,18 @@ def llm_call(state: ResearcherState):
     }
 
 
-def tool_node(state: ResearcherState):
+async def tool_node(state: ResearcherState):
     """
     Hands of researcher: executes tool calls
     """
+    _, tools_by_name = _get_runtime_tools()
     tool_calls = state["researcher_messages"][-1].tool_calls
 
     observations = []
     for tool_call in tool_calls:
         tool = tools_by_name.get(tool_call["name"])
         if tool:
-            observations.append(tool.invoke(tool_call["args"]))
+            observations.append(await tool.ainvoke(tool_call["args"]))
         else:
             observations.append(f"Tool {tool_call['name']} not found")
 

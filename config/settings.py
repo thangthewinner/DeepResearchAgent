@@ -5,8 +5,6 @@ Uses pydantic-settings to validate all required env vars at startup.
 If any required key is missing, the app will fail immediately with a clear error.
 """
 
-from typing import Optional
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -79,10 +77,8 @@ class Settings(BaseSettings):
     )
 
     # --- LangSmith Observability ---
-    langchain_tracing_v2: Optional[str] = Field(
-        default=None, alias="LANGCHAIN_TRACING_V2"
-    )
-    langchain_api_key: Optional[str] = Field(default=None, alias="LANGCHAIN_API_KEY")
+    langchain_tracing_v2: str | None = Field(default=None, alias="LANGCHAIN_TRACING_V2")
+    langchain_api_key: str | None = Field(default=None, alias="LANGCHAIN_API_KEY")
     langchain_project: str = Field(default="deepresearch", alias="LANGCHAIN_PROJECT")
 
     # --- Logging ---

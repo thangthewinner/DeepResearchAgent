@@ -4,11 +4,29 @@ from pydantic import BaseModel, Field
 
 
 class Fact(BaseModel):
-    """An atomic unit of knowledge."""
+    """An atomic unit of knowledge with provenance metadata."""
 
     content: str = Field(description="The factual statement")
     source_url: str = Field(description="Where this fact came from")
     confidence_score: int = Field(description="1-100 confidence score")
+    source_type: str = Field(
+        default="web",
+        description="Source category such as web, pdf, scholarly, official, or news",
+    )
+    source_title: str = Field(default="", description="Readable title of the source")
+    source_domain: str = Field(default="", description="Normalized source domain")
+    source_locator: str = Field(
+        default="",
+        description="Locator such as page, page range, DOI, section, or arXiv identifier",
+    )
+    evidence_type: str = Field(
+        default="snippet",
+        description="Evidence strength such as snippet, extracted_content, document_parse, abstract, or full_text",
+    )
+    published_at: str = Field(
+        default="", description="Publication date or year when available"
+    )
+    authors: List[str] = Field(default_factory=list, description="Source authors")
     is_disputed: bool = Field(
         default=False, description="If this fact conflicts with others"
     )

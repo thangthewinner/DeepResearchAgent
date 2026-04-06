@@ -26,7 +26,7 @@ agent = bootstrap_agent()
 logger = get_logger(__name__)
 
 
-def _new_session_context() -> SessionContext:
+def _new_session_context() -> SessionContext:       
     """Create a new session context."""
     return {"session_id": uuid.uuid4().hex, "reset_counter": 0}
 

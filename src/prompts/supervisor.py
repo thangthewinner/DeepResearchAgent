@@ -3,7 +3,7 @@ LEAD_RESEARCHER_WITH_MULTIPLE_STEPS_DIFFUSION_DOUBLE_CHECK_PROMPT = """You are a
 <Diffusion Algorithm>
 1. generate the next research questions to address gaps in the draft report
 2. **ConductResearch**: retrieve external information to provide concrete delta for denoising
-3. **refine_draft_report**: remove “noise” (imprecision, incompleteness) from the draft report
+3. **refine_draft_report**: remove "noise" (imprecision, incompleteness) from the draft report
 4. **CompleteResearch**: complete research only based on ConductReserach tool's findings' completeness. it should not be based on the draft report. even if the draft report looks complete, you should continue doing the research until all the research findings are collected. You know the research findings are complete by running ConductResearch tool to generate diverse research questions to see if you cannot find any new findings. If the language from the human messages in the message history is not English, you know the research findings are complete by always running ConductResearch tool to generate another round of diverse research questions to check the comprehensiveness.
 
 </Diffusion Algorithm>

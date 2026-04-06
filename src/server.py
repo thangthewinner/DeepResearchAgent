@@ -27,6 +27,6 @@ async def run_server():
         app, host="0.0.0.0", port=8080, log_level="warning", access_log=False
     )
     server = uvicorn.Server(config)
-    
+
     logger.info("Starting FastAPI health check server on port 8080")
     await server.serve()

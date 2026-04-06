@@ -12,6 +12,7 @@ from ..prompts.writer import (
     REPORT_GENERATION_WITH_DRAFT_INSIGHT_PROMPT,
 )
 from ..utils.date import get_today_str
+from ..utils.evidence import format_fact_for_writer, sort_facts_by_strength
 
 
 @tool(parse_docstring=True)
@@ -54,13 +55,8 @@ def final_report_generation(state: AgentState) -> dict:
     draft_report = state.get("draft_report", "")
 
     # Combine structured knowledge_base facts with raw notes
-    kb_facts = state.get("knowledge_base", [])
-    kb_section = "\n".join(
-        [
-            f"- [{f.confidence_score}%] {f.content} (source: {f.source_url})"
-            for f in kb_facts
-        ]
-    )
+    kb_facts = sort_facts_by_strength(state.get("knowledge_base", []))
+    kb_section = "\n".join([format_fact_for_writer(fact) for fact in kb_facts])
     raw_notes = "\n".join(state.get("notes", []))
 
     findings = ""

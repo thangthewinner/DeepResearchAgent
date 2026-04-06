@@ -68,60 +68,94 @@ Built for personal use. Not a SaaS product.
 
 **Prerequisites:** Python 3.12+, [uv](https://docs.astral.sh/uv/)
 
+### 1. Clone and install
+
 ```bash
-git clone https://github.com/yourname/DeepResearchAgent
+git clone https://github.com/thangthewinner/DeepResearchAgent
 cd DeepResearchAgent
-
-cp .env.example .env
-# Edit .env — fill in OPENAI_API_KEY and TAVILY_API_KEY
-# TELEGRAM_BOT_TOKEN is only needed if you run Telegram bot runtime
-```
-
-Install dependencies:
-
-```bash
 uv sync --dev
 ```
 
-Run Gradio (primary runtime):
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` — fill in at least the two required keys:
+
+| Variable | Where to get it |
+|----------|-----------------|
+| `OPENAI_API_KEY` | https://platform.openai.com/api-keys |
+| `TAVILY_API_KEY` | https://app.tavily.com (free tier available) |
+
+### 3. Run
+
+**Gradio UI** (primary runtime):
 
 ```bash
 uv run python examples/gradio_app.py
 ```
 
-Optional runtimes:
+Then open `http://localhost:7860`.
+
+**Optional runtimes:**
 
 ```bash
-# Telegram bot runtime
+# Telegram bot (requires TELEGRAM_BOT_TOKEN in .env)
 uv run python examples/telegram_bot.py
 
-# CLI smoke run
+# CLI smoke test
 uv run python examples/simple_query.py
 ```
 
-Docker Compose (Gradio only):
+**Docker Compose** (Gradio only):
 
 ```bash
 docker compose up --build
 ```
 
-Then open `http://localhost:7860`.
+### Configuration reference
 
-### Environment variables
+All environment variables with their defaults. See `.env.example` for the full list with comments.
 
-See `.env.example` for the full list. Minimum required:
+**Required:**
 
 | Variable | Description |
 |----------|-------------|
 | `OPENAI_API_KEY` | OpenAI API key |
-| `TAVILY_API_KEY` | Tavily search API key (free tier available at app.tavily.com) |
+| `TAVILY_API_KEY` | Tavily search API key |
 
-Optional variables worth knowing:
+**Runtime:**
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TELEGRAM_BOT_TOKEN` | _(empty)_ | Required only for Telegram bot runtime |
-| `REQUEST_TIMEOUT_SECONDS` | `600` | Max time per research request |
+| `TELEGRAM_BOT_TOKEN` | _(empty)_ | Telegram bot token (only for Telegram runtime) |
+| `REQUEST_TIMEOUT_SECONDS` | `600` | Max seconds per research request |
+| `RESEARCHER_TIMEOUT_SECONDS` | `120` | Max seconds per researcher sub-agent |
+| `MAX_CONCURRENT_RESEARCHERS` | `1` | Max parallel researcher sub-agents |
 | `MAX_RESEARCHER_ITERATIONS` | `5` | Max supervisor loop iterations |
-| `LOG_FILE` | _(empty)_ | Path to write log file, e.g. `logs/app.log` |
-| `LANGCHAIN_TRACING_V2` | _(empty)_ | Set to `true` to enable LangSmith tracing |
+
+**Model overrides:**
+
+| Variable | Default |
+|----------|---------|
+| `BASE_MODEL` | `openai:gpt-4o` |
+| `CREATIVE_MODEL` | `openai:gpt-4o` |
+| `WRITER_MODEL` | `openai:gpt-5` |
+| `COMPRESS_MODEL` | `openai:gpt-4o` |
+| `COMPRESSOR_MODEL` | `openai:gpt-4o-mini` |
+| `SUMMARIZATION_MODEL` | `openai:gpt-4o-mini` |
+| `CRITIC_MODEL` | `openai:gpt-4o` |
+| `JUDGE_MODEL` | `openai:gpt-4o` |
+
+**Observability:**
+
+| Variable | Description |
+|----------|-------------|
+| `LOG_LEVEL` | `DEBUG` / `INFO` / `WARNING` / `ERROR` (default: `INFO`) |
+| `LOG_FILE` | Path to rotating log file, e.g. `logs/app.log` |
+| `LANGCHAIN_TRACING_V2` | Set `true` for LangSmith tracing |
+| `LANGCHAIN_API_KEY` | LangSmith API key |
+| `LANGCHAIN_PROJECT` | LangSmith project name |
+
